@@ -7,7 +7,7 @@ import Vote from './pages/Vote'
 import NotFound from './pages/NotFound'
 
 const client = new ApolloClient({
-  uri: '/graphql',
+  uri: '/graphql', // replace this with server uri, e.g. render.techmatchups/graphql
   cache: new InMemoryCache()
 })
 
