@@ -1,4 +1,4 @@
-const { gql } = require('apollo-server-express');
+const { gql } = require('graphql-tag')
 
 const typeDefs = gql`
   type Tech {
@@ -23,6 +23,6 @@ const typeDefs = gql`
     createMatchup(tech1: String!, tech2: String!): Matchup
     createVote(_id: String!, techNum: Int!): Matchup
   }
-`;
+`
 
-module.exports = typeDefs;
+module.exports = typeDefs

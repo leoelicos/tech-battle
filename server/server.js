@@ -1,38 +1,51 @@
+const { ApolloServer } = require('@apollo/server')
+const { expressMiddleware } = require('@apollo/server/express4')
 const express = require('express')
-const { ApolloServer } = require('apollo-server-express')
-const path = require('path')
-
+const http = require('http')
+const cors = require('cors')
+const bodyParser = require('body-parser')
 const { typeDefs, resolvers } = require('./schemas')
-const db = require('./config/connection')
+const connection = require('./config/connection.js')
+const path = require('path')
 
 const PORT = process.env.PORT || 3001
 const app = express()
+const httpServer = http.createServer(app)
+
 const server = new ApolloServer({
   typeDefs,
   resolvers
 })
+const main = async () => {
+  try {
+    await server.start()
 
-app.use(express.urlencoded({ extended: false }))
-app.use(express.json())
+    await connection
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')))
-}
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build/index.html'))
-})
-
-const startApolloServer = async (typeDefs, resolvers) => {
-  await server.start()
-  server.applyMiddleware({ app })
-
-  db.once('open', () => {
-    app.listen(PORT, () => {
-      console.log(`API server running on port ${PORT}!`)
-      console.log(`Use GraphQL at http://localhost:${PORT}${server.graphqlPath}`)
+    app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, '../client/build/index.html'))
     })
-  })
+
+    app.use(
+      '/graphql',
+      cors(),
+      bodyParser.json(),
+      express.urlencoded({ extended: false }),
+      expressMiddleware(server, {
+        context: async ({ req }) => ({ token: req.headers.token })
+      })
+    )
+    if (process.env.NODE_ENV === 'production') {
+      app.use(express.static(path.join(__dirname, '../client/build')))
+    }
+
+    await new Promise((resolve) => {
+      httpServer.listen({ port: PORT }, resolve)
+    })
+    console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`)
+  } catch (error) {
+    console.log(error)
+  }
 }
 
-startApolloServer(typeDefs, resolvers)
+main()
